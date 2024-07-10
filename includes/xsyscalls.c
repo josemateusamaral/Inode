@@ -28,7 +28,7 @@ void xFormatFast()
  * 4. Allocating the data bitmap including the superblock location, inode bitmap, data bitmap, the root directory, and inode reserved sector.
  * \param xDisc The file containing the hd itself.
  **/
-void xFormat(int xDisc)
+void xFormat()
 {
     // * Inode size increased to 128 bytes (22/06/2023)
     struct SuperBlock block = create_super_block(4096, 128, 1);

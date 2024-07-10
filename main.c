@@ -17,10 +17,6 @@
 
 #include <unistd.h>
 
-/**
-Criar HD = 
-*/
-
 
 void main()
 {
@@ -29,7 +25,11 @@ void main()
     xmount();
 
     // formatar disco
-    xFormatFast();
+    xFormat();
+
+    // criar pasta
+    xmkdir(int xDisc, struct SuperBlock ReadBlock, char *dir_name, char *file_name, long int father_address);
+    show_all_directories(int xDisc, struct SuperBlock ReadBlock);
 
     // fechar disco
     xdismount();

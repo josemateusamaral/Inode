@@ -4,5 +4,5 @@
 #include <stdlib.h>
 
 void user_menu(int xDisc);
-void xFormat(int xDisc);
+
 #endif

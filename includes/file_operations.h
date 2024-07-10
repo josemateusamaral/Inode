@@ -18,7 +18,7 @@ typedef struct InodeNumberNameDir
 
 long int physicalAddress(int blockSize, long int block);
 Directory *returnDirPhysicalLocation(int xDisc, struct SuperBlock ReadBlock, long int block);
-void xmkdir(int xDisc, struct SuperBlock ReadBlock, char *dir_name, char *file_name, long int father_address);
+void xmkdir( struct SuperBlock ReadBlock, char *dir_name, char *file_name, long int father_address);
 long int find_dir(int xDisc, struct SuperBlock ReadBlock, long int father_address, char *dir_name);
 void show_all_directories(int xDisc, struct SuperBlock ReadBlock);
 void print_nexts(int xDisc, struct SuperBlock ReadBlock, struct directory *child_instance, long int child_address, int level);
