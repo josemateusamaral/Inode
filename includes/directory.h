@@ -11,4 +11,7 @@ typedef struct directory
 	struct directory *next_structure;
 } Directory;
 
+Directory *create_dir(char *_name, int _inode);
+void printDir(Directory * diretorio);
+
 #endif

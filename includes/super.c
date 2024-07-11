@@ -9,7 +9,7 @@ struct SuperBlock create_super_block(int size_block, int size_inode, int size_hd
 {
     struct SuperBlock super_block = data_calculation_hd(size_block, size_inode, size_hd_gb);
     // * Show the superblock
-    printf("Superblock created: \n");
+    printf("\n\nSuperblock created \n");
     printf("Magic: %ld \n", super_block.magic);
     printf("Block size: %d \n", super_block.block_size);
     printf("Inode size: %d \n", super_block.inode_size);
@@ -21,7 +21,7 @@ struct SuperBlock create_super_block(int size_block, int size_inode, int size_hd
     printf("Inode directory start: %d \n", super_block.inode_directory_start);
     printf("Inode total: %d \n", super_block.inode_total);
     printf("Block data total: %d \n", super_block.block_data_total);
-    printf("Data start: %d \n", super_block.data_start);
+    printf("Data start: %d \n\n\n", super_block.data_start);
 
     return super_block;
 }
@@ -40,19 +40,18 @@ struct SuperBlock data_calculation_hd(int size_block, int size_inode, int size_h
     long int direct_inode_plus_2ind = direct_inode_plus_1ind + pow(number_data_in_inode, 2) * size_block;
     long int direct_inode_plus_3ind = direct_inode_plus_2ind + pow(number_data_in_inode, 3) * size_block;
 
-    printf("Number of data in inode: %d bytes\n", number_data_in_inode);
+    printf("\n\nNumber of data in inode: %d bytes\n", number_data_in_inode);
     printf("Direct inode only: %ld bytes\n", direct_inode_only);
     printf("Direct inode plus 1 indirect: %ld bytes\n", direct_inode_plus_1ind);
     printf("Direct inode plus 2 indirect: %ld bytes\n", direct_inode_plus_2ind);
     printf("Direct inode plus 3 indirect: %ld bytes\n", direct_inode_plus_3ind);
-
     printf("Direct inode plus 1 indirect: %ld gb\n", direct_inode_plus_1ind / (1024 * 1024 * 1024));
     printf("Direct inode plus 2 indirect: %ld gb\n", direct_inode_plus_2ind / (1024 * 1024 * 1024));
     printf("Direct inode plus 3 indirect: %ld gb\n", direct_inode_plus_3ind / (1024 * 1024 * 1024));
 
     long long size_hb_bytes = (long long)size_hd_gb * 1024 * 1024 * 1024;
 
-    printf("Size of hard disk: %lld bytes\n", size_hb_bytes);
+    printf("\n\nSize of hard disk: %lld bytes\n", size_hb_bytes);
 
     // * Calculate the number of inodes, it will be stored in the superblock
 

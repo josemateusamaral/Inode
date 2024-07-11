@@ -1,6 +1,4 @@
-// disco montado
-int xDisc;
-int xSuperBlock;
+#include "xsyscalls.h"
 
 // formatar disco rapidamente sem limpar os blocos
 void xFormatFast()
@@ -55,28 +53,17 @@ void xFormat()
     write(xDisc, root, sizeof(Directory));
 
     // * Data bitmap represents the data blocks that are free or not.
-
-    long int total_data = block.data_start;                     // * bytes 0 - 16527862 byte
-    int occupied_blocks = ROUND(total_data / block.block_size); // * blocks = 4036 occupied blocks
-
+    long int total_data = block.data_start;                    
+    int occupied_blocks = ROUND(total_data / block.block_size);
 
     for (int i = 0; i < occupied_blocks; i++)
     {
         return_free_data_bit(xDisc, block);
     }
 
-    printf("Occupied blocks: %d\n", occupied_blocks);
+    printf("\n\nOccupied blocks: %d\n", occupied_blocks);
 
-    // for (int i = 0; i < total_blocks_full_byte + 1; i++){
-    //     printf("Byte 2: %x\n", list_data_byte[i]);
-    // }
-
-    // list_data_bits[total_data_bits - 1] = resto;
-
-    // * 11111111110000000000000000000000000000000000
-    // * 1 byte = 8 bits
-    // * 1 byte completo = 11111111
-    // write(xDisc, list_data_bits, total_data_bits);
+    xReadBlock = block;
 }
 
 // testar o discos
@@ -93,21 +80,175 @@ void xtest(int xDisc)
     read(xDisc, buffer, 4096);
     memcpy(&ReadBlock, buffer, sizeof(struct SuperBlock));
 
-    create_dump_directory_tree(xDisc, ReadBlock);
+    create_dump_directory_tree();
 }
 
 // montar disco
-void xmount()
+void xmount( char * pathDisco )
 {
-    if ((xDisc = open("bla.hd", O_RDWR)) == -1)
+    if ((xDisc = open(pathDisco, O_RDWR)) == -1)
     {
         printf("Erro ao montar o disco...");
         exit(1);
     }
+    xReadBlock = read_superblock(xDisc);
+
 }
 
 // desmontar disco
 void xdismount()
 {
     close(xDisc);
+}
+
+// criar diretorio
+void xmkdir( char *dir_name, char *file_name, long int father_address){
+    
+    // * STEP 1 - Split the path into the directory name and the path itself.
+    // * STEP 2 - Keep the reference to the father directory.
+    // * STEP 3 - If father does not have first, then allocate the directory in the first.
+    // *          Else, iterate into next's
+    // * First it is necessary to split the path into the directory name and the path itself.
+
+    char *dir_path = (char *)malloc(sizeof(char) * strlen(dir_name) + 1);
+    strcpy(dir_path, dir_name);
+
+    char *token = (char *)malloc(sizeof(char) * strlen(dir_name));
+    token = strtok(dir_path, "/");
+
+    char *nomeFormatado = (char *)malloc(sizeof(char) * strlen(dir_name));
+
+    // * We have to iterate through the path, and make sure that this path exists and the folder does not.
+    long int thisDirAddress = father_address;
+    long int beforeAddress = 0;
+
+    // * Running into path splited by /
+    // ? Returning the father path in the before address
+
+    while (token != NULL)
+    {
+        // * See if is the last element
+        // * If it is, then we have the directory name, and the father address.
+        // * If the last string has a find_dir, then the directory already exists.
+        
+        beforeAddress = thisDirAddress;
+        thisDirAddress = find_dir( thisDirAddress, token);
+        strcpy(nomeFormatado, token);
+
+        if (thisDirAddress == 0)
+        {
+
+            // check if directory already exists
+            if (find_dir( thisDirAddress, token) != 0 )
+            {
+                printf("Diretório já existe.\n");
+                return;
+            }
+
+            if (strtok(NULL, "/") == NULL)
+            {
+                printf("\n\nParou no token: %s\n", token);
+                break;
+            }
+
+            printf("Caminho não encontrado.\n");
+        }
+
+        strcpy(dir_path, token);
+        token = strtok(NULL, "/");
+        
+    }
+    printf("Endereco do before (pai): %ld\n", beforeAddress);
+    printf("Endereco do elemento (this): %ld\n", thisDirAddress);
+
+    // * If thisDirAddress is 0, then the directory does not exist
+    // * If beforeAddress is 0, then the directory is the root directory
+
+    if (thisDirAddress == 0){
+        // * Creating the directory
+        struct directory *directory_instance = (struct directory *)malloc(xReadBlock.block_size);
+        strcpy(directory_instance->name, nomeFormatado);
+
+        // * Allocating in the bitmap of data
+
+        long int free_data_block = return_free_data_bit(xDisc, xReadBlock);
+
+        if (free_data_block == -1)
+        {
+            printf("No free data blocks.\n");
+            return;
+        }
+
+
+         // * Verify if the directory is the root directory
+         // * If it is, then the father block will be in the super informations
+         // * Otherwise, we need do the math to find the father block
+        long int physicalFatherAddress = xReadBlock.inode_directory_start;
+        if (beforeAddress != 0){
+            physicalFatherAddress = beforeAddress * xReadBlock.block_size + 1;
+        }
+
+        // * Catch the father instance
+        struct directory *father_directory = (struct directory *)malloc(xReadBlock.block_size);
+        lseek(xDisc, physicalFatherAddress, SEEK_SET);
+        read(xDisc, father_directory, xReadBlock.block_size);
+
+        // * We have two cases:
+        // * 1 - The father directory does not have a first directory
+        // * 2 - The father directory has a first directory
+
+        if (father_directory->first_int == 0){
+            // * If he doesn't have a first directory, then we allocate the directory in the first
+            father_directory->first_int = free_data_block;
+            lseek(xDisc, physicalFatherAddress, SEEK_SET);
+            write(xDisc, father_directory, xReadBlock.block_size);
+
+        } else {
+            // * Else we need to iterate through the next's of the father directory
+            // * And allocate the directory in the last next
+            struct directory *next_directory = (struct directory *)malloc(xReadBlock.block_size);
+            long int physicalNextAddress = father_directory->first_int * xReadBlock.block_size + 1;
+            
+            // * Catching the next directory from memory
+            lseek(xDisc, physicalNextAddress, SEEK_SET);
+            read(xDisc, next_directory, xReadBlock.block_size);
+            
+            while (next_directory->next_int != 0){
+                physicalNextAddress = next_directory->next_int * xReadBlock.block_size + 1;
+                lseek(xDisc, physicalNextAddress, SEEK_SET);
+                read(xDisc, next_directory, xReadBlock.block_size);
+            }
+
+            // * Allocating the directory in the last next
+            // * And updating the next of the last next
+
+            next_directory->next_int = free_data_block;
+            lseek(xDisc, physicalNextAddress, SEEK_SET);
+            write(xDisc, next_directory, xReadBlock.block_size);
+        }
+        
+        // ? FIXED FILE TYPE, ALLOCATING STATIC TXT
+        long int *indirects = (long int *)malloc(4 * sizeof(long int));
+        if (strlen(file_name) > 1){
+            indirects = allocate_data(file_name);
+            
+        }
+
+        // * Allocating Inode
+
+        long int inodeInt = allocate_inode(xDisc, xReadBlock, indirects);
+        directory_instance->inode = inodeInt;
+
+        // * Allocating the directory in the free data block
+        long int physicalDirectoryAddress = physicalAddress(xReadBlock.block_size, free_data_block);
+        lseek(xDisc, physicalDirectoryAddress, SEEK_SET);
+        write(xDisc, directory_instance, xReadBlock.block_size);  
+
+        printf("Diretorio criado com sucesso.\n");
+
+    } else {
+        printf("Diretorio já existe.\n");
+    }
+
+
 }

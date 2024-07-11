@@ -84,7 +84,7 @@ void user_menu(int xDisc){
     // * beforeDir
     long int beforeDirectory = 0;
     // * Searching for root
-    return_child_inodes(currentDirectory, ReadBlock, xDisc, sh_mem);
+    return_child_inodes(currentDirectory, sh_mem);
     while(strcmp(opcao, "quit")!=0){
         printf(">>");
         fflush(stdout); 
@@ -115,7 +115,7 @@ void user_menu(int xDisc){
             printf("Caminho: %s\n", opcao);
             // ! Apenas voltando uma vez por momento
             if (strcmp(keys, "..") == 0){
-                memcpy(sh_mem, return_child_inodes(beforeDirectory, ReadBlock, xDisc, sh_mem), sizeof(struct InodeNumberNameDir));
+                memcpy(sh_mem, return_child_inodes(beforeDirectory, sh_mem), sizeof(struct InodeNumberNameDir));
                 currentDirectory = beforeDirectory;
             } else {
 
@@ -137,7 +137,7 @@ void user_menu(int xDisc){
                 } else {
                     beforeDirectory = currentDirectory;
                     printf("id blocoNumber: %ld\n", id_bloco);
-                    memcpy(sh_mem, return_child_inodes(id_bloco, ReadBlock, xDisc, sh_mem), sizeof(struct InodeNumberNameDir));
+                    memcpy(sh_mem, return_child_inodes(id_bloco, sh_mem), sizeof(struct InodeNumberNameDir));
                     currentDirectory = id_bloco;
                 }
             }
@@ -153,14 +153,14 @@ void user_menu(int xDisc){
                 }
                 printf("Currentdir: %d\n", currentDirectory);
 
-                xmkdir(xDisc, ReadBlock,keys,"inputTest.txt",currentDirectory);
+                xmkdir( keys,"inputTest.txt",currentDirectory);
 
                 fflush(stdout); 
                 if (dup2(STDOUT_FILENO, STDOUT_FILENO) == -1) {
                     perror("dup2");
                     exit(EXIT_FAILURE);
                 }
-                memcpy(sh_mem, return_child_inodes(currentDirectory, ReadBlock, xDisc, sh_mem), sizeof(struct InodeNumberNameDir));
+                memcpy(sh_mem, return_child_inodes(currentDirectory, sh_mem), sizeof(struct InodeNumberNameDir));
 
                 exit(EXIT_SUCCESS);
             }
@@ -183,11 +183,11 @@ void user_menu(int xDisc){
                 printf("Caminho inválido!\n");
             } else {
                 printf("id id_inode: %ld\n", id_inode);
-                printInode(xDisc, ReadBlock, id_inode);
+                printInode(id_inode);
                 keys = strtok(NULL, " ");
                 if (strcmp(keys, "y") == 0){
                     printf("Showing a file content.\n");
-                    readInode(xDisc, ReadBlock, id_inode);
+                    readInode(id_inode);
                 }
             }
         }

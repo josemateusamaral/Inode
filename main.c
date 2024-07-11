@@ -14,22 +14,34 @@
 #include "includes/xsyscalls.c"
 #include "includes/file_operations.c"
 #include "includes/user_interaction.c"
-
 #include <unistd.h>
 
 
 void main()
 {
+    system("clear");
+    system("rm disco.hd");
+    system("dd if=/dev/zero of=disco.hd bs=MB count=100");
+    printf("\n\n");
 
     // montar disco
-    xmount();
+    xmount("disco.hd");
 
     // formatar disco
     xFormat();
 
-    // criar pasta
-    xmkdir(int xDisc, struct SuperBlock ReadBlock, char *dir_name, char *file_name, long int father_address);
-    show_all_directories(int xDisc, struct SuperBlock ReadBlock);
+    // criar pastas
+    xmkdir("/testando","teste.txt",0);
+    xmkdir("/testando2","teste2.txt",0);
+    xmkdir("/testando3/teste","teste2.txt",0);
+    show_all_directories();
+
+    find_dir(0,"testando3");
+    find_dir(6,"teste");
+
+    read_data(6);
+
+    // criar arquivo
 
     // fechar disco
     xdismount();
@@ -39,3 +51,4 @@ void main()
 
 
 //user_menu(xDisc);
+//

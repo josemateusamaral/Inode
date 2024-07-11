@@ -4,14 +4,14 @@
 #define SETBIT(a, n) ((a << n)+ 1)
 #define CLEARBIT(a, n) (a & (0xff ^ (1 << n)))
 
-int return_free_inode_bit(int xDisc, struct SuperBlock ReadBlock)
+int return_free_inode_bit()
 {
-    return return_free_bit(xDisc, ReadBlock.inode_total, ReadBlock.bmap_inode_start);
+    return return_free_bit(xDisc, xReadBlock.inode_total, xReadBlock.bmap_inode_start);
 }
 
-int return_free_data_bit(int xDisc, struct SuperBlock ReadBlock)
+int return_free_data_bit()
 {
-    return return_free_bit(xDisc, ReadBlock.block_data_total, ReadBlock.bmap_data_start);
+    return return_free_bit(xDisc, xReadBlock.block_data_total, xReadBlock.bmap_data_start);
 };
 
 unsigned char return_bit_moved(unsigned char bitset, int i){
@@ -43,6 +43,5 @@ int return_free_bit(int xDisc, long int total, long int bmap_start)
             return (i * 8) + casas;
         }
     }
-    printf("\nN�o h� bits livres\n");
     return -1;
 };
