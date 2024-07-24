@@ -19,31 +19,30 @@
 
 void main()
 {
+
+    // criar imagem de disco
     system("clear");
     system("rm disco.hd");
-    system("dd if=/dev/zero of=disco.hd bs=MB count=100");
+    system("dd if=/dev/zero of=disco.hd bs=MB count=123");
     printf("\n\n");
 
     // montar disco
     xmount("disco.hd");
 
     // formatar disco
-    xFormat();
+    xformat();
 
     // criar pastas
-    xmkdir("/testando","teste.txt",0);
-    xmkdir("/testando2","teste2.txt",0);
-    xmkdir("/testando3/teste","teste2.txt",0);
-    show_all_directories();
+    xmkdir("testando");
+    xmkdir("testando2");
+    xmkdir("teste");
 
-    find_dir(0,"testando3");
-    find_dir(6,"teste");
-
-    read_data(6);
+    xmkdir("/teste/teste2");
 
     // criar arquivo
+    xopen("samurai.png");
 
-    // fechar disco
+    show_all_directories();
     xdismount();
 
     
