@@ -79,7 +79,9 @@ struct Indirect
 };
 
 struct Inode *create_inode(char *content, int file_type, long int *indirects);
-long int allocate_inode(int xDisc, struct SuperBlock ReadBlock, long int * indirects);
-void printInode(long int inode_address);
-void readInode(long int inode_number);
+long int allocate_inode(int xDisc, struct SuperBlock ReadBlock, long int * indirects, int type);
+void printInode_INT(long int inode_address);
+void printInode_OBJ(struct Inode * inode);
+struct Inode * readInode(long int inode_number);
+
 #endif

@@ -22,7 +22,7 @@ void user_menu(int xDisc){
     printf("Welcome to the Inode File System!\n");
     printf("We will format your disk now.\n");
     sleep(1);
-    xFormat(xDisc);
+    xformat(xDisc);
     sleep(2);
     printf("Disk formatted!\n");
 
@@ -153,7 +153,10 @@ void user_menu(int xDisc){
                 }
                 printf("Currentdir: %d\n", currentDirectory);
 
-                xmkdir( keys,"inputTest.txt",currentDirectory);
+                long int bkpPath = xpath;
+                xpath = currentDirectory;
+                xmkdir(keys);
+                xpath = bkpPath;
 
                 fflush(stdout); 
                 if (dup2(STDOUT_FILENO, STDOUT_FILENO) == -1) {
@@ -183,7 +186,7 @@ void user_menu(int xDisc){
                 printf("Caminho inválido!\n");
             } else {
                 printf("id id_inode: %ld\n", id_inode);
-                printInode(id_inode);
+                printInode_INT(id_inode);
                 keys = strtok(NULL, " ");
                 if (strcmp(keys, "y") == 0){
                     printf("Showing a file content.\n");

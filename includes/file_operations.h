@@ -10,11 +10,12 @@ typedef struct InodeNumberNameDir
 } InodeNumberNameDir;
 
 long int physicalAddress(int blockSize, long int block);
-Directory *returnDirPhysicalLocation(long int block);
-long int find_dir(long int father_address, char *dir_name);
+Directory * returnDirPhysicalLocation(long int block);
+Directory * find_dir(long int father_address, char *dir_name);
 void show_all_directories();
 void print_nexts(struct directory *child_instance, long int child_address, int level);
-void create_dump_directory_tree();
+void CreateEntry( char * dir_name, int type );
+//void create_dump_directory_tree();
 long int * allocate_data(char *data);
 void write_block(char *data, long int block_address);
 void read_data(struct Inode *inode);

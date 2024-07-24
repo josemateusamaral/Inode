@@ -35,24 +35,25 @@ struct Inode *create_inode(char *content, int file_type, long int *indirects)
 }
 
 //alocar inode no disco
-long int allocate_inode(int xDisc, struct SuperBlock ReadBlock, long int * indirects)
+long int allocate_inode(int xDisc, struct SuperBlock ReadBlock, long int * indirects, int type)
 {
     printf("Allocate inode\n");
     printf("Indirect 1: %ld\n", indirects[0]);
 
     long int free_inode = return_free_inode_bit(xDisc, ReadBlock);
     struct Inode *inode_instance = (struct Inode *)malloc(ReadBlock.inode_size);
-    inode_instance = create_inode("", 2, indirects);
+    inode_instance = create_inode("",type, indirects);
     long int physical_inode_address = ReadBlock.inode_start + free_inode * ReadBlock.inode_size;
     printf("Physical inode address: %ld\n", physical_inode_address);
     lseek(xDisc, physical_inode_address, SEEK_SET);
     write(xDisc, inode_instance, ReadBlock.inode_size);
+    
 
     return free_inode;
 }
 
 // printar inode
-void printInode(long int inode_address){
+void printInode_INT(long int inode_address){
     long int physical_inode_address = xReadBlock.inode_start + inode_address * xReadBlock.inode_size;
     lseek(xDisc, physical_inode_address, SEEK_SET);
     struct Inode *inode = (struct Inode *)malloc(xReadBlock.inode_size);
@@ -66,11 +67,23 @@ void printInode(long int inode_address){
     printf("inode->indirect3: %ld\n", inode->indirect3);
 }
 
+// printar inode
+void printInode_OBJ( struct Inode * inode){
+    printf("inode->file_type: %d\n", inode->file_type);
+    printf("inode->file_size: %d\n", inode->file_size);
+    printf("inode->creation_time: %ld\n", inode->creation_time);
+    printf("inode->modify_time: %ld\n", inode->modify_time);
+    printf("inode->indirect1: %ld\n", inode->indirect1);
+    printf("inode->indirect2: %ld\n", inode->indirect2);
+    printf("inode->indirect3: %ld\n", inode->indirect3);
+}
+
 // ler dados de um inode
-void readInode(long int inode_address){
+struct Inode * readInode(long int inode_address){
     long int physical_inode_address = xReadBlock.inode_start + inode_address * xReadBlock.inode_size;
     lseek(xDisc, physical_inode_address, SEEK_SET);
     struct Inode *inode = (struct Inode *)malloc(xReadBlock.inode_size);
     read(xDisc, inode, xReadBlock.inode_size);
     read_data(inode);
+    return inode;
 }
