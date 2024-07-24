@@ -141,13 +141,15 @@ InodeNumberNameDir * return_child_inodes(int inodeAddressFather, InodeNumberName
 * \brief Function that shows all directories in memory, based on the folder name and the father's address
 
 **/
-void show_all_directories()
-{
-
-    long int father_address = xReadBlock.inode_directory_start;
-    struct directory *directory_instance = (struct directory *)malloc(xReadBlock.block_size);
-    lseek(xDisc, father_address, SEEK_SET);
-    read(xDisc, directory_instance, xReadBlock.block_size);
+void xls(){
+    
+    struct directory * directory_instance = returnDirPhysicalLocation(xpath);
+    //Inode * inode = readInode(directory_instance->inode);
+    printf("\n DIR: %s ---- \n",directory_instance->name);
+    //long int father_address = xReadBlock.inode_directory_start;
+    //struct directory *directory_instance = (struct directory *)malloc(xReadBlock.block_size);
+    //lseek(xDisc, father_address, SEEK_SET);
+    //read(xDisc, directory_instance, xReadBlock.block_size);
 
     long int child_address = directory_instance->first_int;
     struct directory *child_instance = (struct directory *)malloc(xReadBlock.block_size);
@@ -361,7 +363,7 @@ void read_data(struct Inode *inode){
     long int total_data_indirects_2 = pow(xReadBlock.block_size / sizeof(long int),2);
     long int total_data_indirects_3 = pow(xReadBlock.block_size / sizeof(long int),3);
 
-    long int total_size_block = inode->file_size;
+    long int total_size_block = 512;
     long int total_blocks_read = 0;
 
     long int active_indirect = 0;
@@ -445,7 +447,7 @@ void CreateEntry( char * dir_name, int type ){
 
     // * We have to iterate through the path, and make sure that this path exists and the folder does not.
     long int thisDirAddress = xpath;
-    long int beforeAddress = 0;
+    long int beforeAddress = xpath;
 
     // * Running into path splited by /
     // ? Returning the father path in the before address
@@ -466,25 +468,19 @@ void CreateEntry( char * dir_name, int type ){
             // check if directory already exists
             if (find_dir( thisDirAddress, token) != 0 )
             {
-                printf("Diretório já existe.\n");
                 return;
             }
 
             if (strtok(NULL, "/") == NULL)
             {
-                printf("\n\nParou no token: %s\n", token);
                 break;
             }
-
-            printf("Caminho não encontrado.\n");
         }
 
         strcpy(dir_path, token);
         token = strtok(NULL, "/");
         
     }
-    printf("Endereco do before (pai): %ld\n", beforeAddress);
-    printf("Endereco do elemento (this): %ld\n", thisDirAddress);
 
     // * If thisDirAddress is 0, then the directory does not exist
     // * If beforeAddress is 0, then the directory is the root directory
@@ -554,6 +550,7 @@ void CreateEntry( char * dir_name, int type ){
         
         // alocando expaco para os indirects
         long int *indirects = (long int *)malloc(4 * sizeof(long int));
+        indirects[0] = return_free_data_bit(xDisc, xReadBlock);
 
         // * Allocating Inode
         long int inodeInt = allocate_inode(xDisc, xReadBlock, indirects, type);
@@ -563,11 +560,6 @@ void CreateEntry( char * dir_name, int type ){
         long int physicalDirectoryAddress = physicalAddress(xReadBlock.block_size, free_data_block);
         lseek(xDisc, physicalDirectoryAddress, SEEK_SET);
         write(xDisc, directory_instance, xReadBlock.block_size);  
-
-        printf("Diretorio criado com sucesso.\n");
-
-    } else {
-        printf("Diretorio já existe.\n");
     }
 
 }

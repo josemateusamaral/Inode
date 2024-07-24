@@ -13,7 +13,6 @@
 #include "includes/inode.c"
 #include "includes/xsyscalls.c"
 #include "includes/file_operations.c"
-#include "includes/user_interaction.c"
 #include <unistd.h>
 
 
@@ -36,18 +35,12 @@ void main()
     xmkdir("testando");
     xmkdir("testando2");
     xmkdir("teste");
+    xopen("samurai.png","w");
+    
+    
+    
+    xls();
 
-    xmkdir("/teste/teste2");
-
-    // criar arquivo
-    xopen("samurai.png");
-
-    show_all_directories();
     xdismount();
-
     
 }
-
-
-//user_menu(xDisc);
-//

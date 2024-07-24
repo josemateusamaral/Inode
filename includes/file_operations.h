@@ -12,7 +12,7 @@ typedef struct InodeNumberNameDir
 long int physicalAddress(int blockSize, long int block);
 Directory * returnDirPhysicalLocation(long int block);
 Directory * find_dir(long int father_address, char *dir_name);
-void show_all_directories();
+void xls();
 void print_nexts(struct directory *child_instance, long int child_address, int level);
 void CreateEntry( char * dir_name, int type );
 //void create_dump_directory_tree();

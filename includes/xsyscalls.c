@@ -107,8 +107,13 @@ void xmkdir(char * nomePasta){
 }
 
 // criar arquivo
-void xopen(char * nomeArquivo){
+void xopen(char * nomeArquivo,char * tipo){
 
+
+    //Directory * entrada = find_dir(xpath,nomeArquivo);
+    //printf("ENTRADA\n");
+    //printDirectory(entrada);
+    //XFILE arquivo;
     CreateEntry(nomeArquivo,REGULAR_FILE);
     /*
     if (strlen(file_name) > 1){
@@ -116,7 +121,6 @@ void xopen(char * nomeArquivo){
     }
     printf("\narquivo: %s - Inode: %ld",indirec)
     */
-    
 
 }
 
