@@ -18,6 +18,6 @@ void xtest(int xDisc);
 void xmount( char * pathDisco );
 void xdismount();
 void xmkdir( char * nomePasta);
-void xopen( char * nomeArquivo, char * tipo);
-
+XFILE * xopen( char * nomeArquivo, char * tipo);
+void xwrite( XFILE arquivo, char * buffer, int tamanhoEscrita);
 #endif

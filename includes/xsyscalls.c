@@ -96,8 +96,7 @@ void xmount( char * pathDisco )
 }
 
 // desmontar disco
-void xdismount()
-{
+void xdismount(){
     close(xDisc);
 }
 
@@ -107,20 +106,23 @@ void xmkdir(char * nomePasta){
 }
 
 // criar arquivo
-void xopen(char * nomeArquivo,char * tipo){
+XFILE * xopen(char * nomeArquivo,char * tipo){
 
-
-    //Directory * entrada = find_dir(xpath,nomeArquivo);
-    //printf("ENTRADA\n");
-    //printDirectory(entrada);
-    //XFILE arquivo;
-    CreateEntry(nomeArquivo,REGULAR_FILE);
-    /*
-    if (strlen(file_name) > 1){
-        indirects = allocate_data(file_name);
+    Directory * directory_instance = find_dir(xpath,nomeArquivo);
+    
+    //diretorio nao existe
+    if(!directory_instance){
+        CreateEntry(nomeArquivo,REGULAR_FILE);
     }
-    printf("\narquivo: %s - Inode: %ld",indirec)
-    */
 
+    // retornar descritor do arquivo
+    Directory * entrada = find_dir(xpath,nomeArquivo);
+    XFILE arquivo = readInode(entrada->inode);
+
+    return arquivo;
 }
 
+// escrever arquivo
+void xwrite( XFILE arquivo, char * buffer, int tamanhoEscrita){
+    allocate_data( buffer, tamanhoEscrita, arquivo);
+}

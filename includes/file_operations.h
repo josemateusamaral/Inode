@@ -16,10 +16,10 @@ void xls();
 void print_nexts(struct directory *child_instance, long int child_address, int level);
 void CreateEntry( char * dir_name, int type );
 //void create_dump_directory_tree();
-long int * allocate_data(char *data);
+void allocate_data(char * data,int tamanho,XFILE arquivo);
 void write_block(char *data, long int block_address);
-void read_data(struct Inode *inode);
-void read_block(long int block_address, long int i);
+void xread(struct Inode *inode, char * dadosLidos, int tamanhoLeitura);
+char * read_block(long int block_address, long int i);
 InodeNumberNameDir * return_child_inodes(int inodeAddressFather, InodeNumberNameDir * sh_mem);
 void write_indirect(char *data, long int block_address, long int indirect_counter, long int active_indirect, int level);
 

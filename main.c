@@ -35,10 +35,30 @@ void main()
     xmkdir("testando");
     xmkdir("testando2");
     xmkdir("teste");
-    xopen("samurai.png","w");
     
+    // criar arquivo
+    XFILE arquivo = xopen("samurai.png","w");
+    printf("\nARQUIVO:\n");
     
-    
+    // ler arquivo e escrever no disco
+    char * escrita = (char *)malloc(745);
+    FILE * arquivoEntrada = fopen("imagem.png","rb");
+    fseek(arquivoEntrada,0,SEEK_SET);
+    fread(&escrita[0],1,745,arquivoEntrada);
+    xwrite(arquivo, escrita, 745);
+
+    // ler dados de um arquivo
+    char * leitura = (char *)malloc(745);
+    xread(arquivo, leitura, 745);
+    printf("\nLEITURA:");
+    for( int i = 0 ; i < 745 ; i++ ){
+        printf("%c",leitura[i]);
+    }
+
+    // escrever arquivo fora
+    FILE * arquivoSaida = fopen("saida.png","wb");
+    fwrite(leitura, sizeof(unsigned char), 745, arquivoSaida);
+
     xls();
 
     xdismount();

@@ -84,6 +84,5 @@ struct Inode * readInode(long int inode_address){
     lseek(xDisc, physical_inode_address, SEEK_SET);
     struct Inode *inode = (struct Inode *)malloc(xReadBlock.inode_size);
     read(xDisc, inode, xReadBlock.inode_size);
-    read_data(inode);
     return inode;
 }
