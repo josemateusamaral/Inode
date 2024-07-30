@@ -22,7 +22,7 @@ void main()
     // criar imagem de disco
     system("clear");
     system("rm disco.hd");
-    system("dd if=/dev/zero of=disco.hd bs=MB count=123");
+    system("dd if=/dev/zero of=disco.hd bs=MB count=16");
     printf("\n\n");
 
     // montar disco
@@ -37,14 +37,15 @@ void main()
     xmkdir("teste");
     
     // criar arquivo
-    XFILE arquivo = xopen("samurai.png","w");
+    XFILE arquivo = xopen("samurai.png","wb");
     printf("\nARQUIVO:\n");
     
     // ler arquivo e escrever no disco
     char * escrita = (char *)malloc(745);
-    FILE * arquivoEntrada = fopen("imagem.png","rb");
+    FILE * arquivoEntrada = fopen("assets/imagem.png","rb");
     fseek(arquivoEntrada,0,SEEK_SET);
     fread(&escrita[0],1,745,arquivoEntrada);
+    
     xwrite(arquivo, escrita, 745);
 
     // ler dados de um arquivo
@@ -56,8 +57,10 @@ void main()
     }
 
     // escrever arquivo fora
-    FILE * arquivoSaida = fopen("saida.png","wb");
+    FILE * arquivoSaida = fopen("temps/saida.png","wb");
     fwrite(leitura, sizeof(unsigned char), 745, arquivoSaida);
+
+    xchdir("teste");
 
     xls();
 

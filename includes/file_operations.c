@@ -16,12 +16,10 @@
 #include "directory.h"
 
 
-// calcular posicao do bloco no disco
+// consultar o disco
 long int physicalAddress(int blockSize, long int block){
     return block * blockSize + 1;
 }
-
-// calcular a posicao de um diretorio dentro do disco
 Directory* returnDirPhysicalLocation(long int block){
         long int physicalAddressNumber = physicalAddress(xReadBlock.block_size, block);
         if (physicalAddressNumber <= 1){
@@ -34,10 +32,7 @@ Directory* returnDirPhysicalLocation(long int block){
         return directory;
 
 }
-
-// procurar diretorio
-Directory * find_dir(long int father_address, char *dir_name)
-{
+Directory * find_dir(long int father_address, char *dir_name){
     
     // * Directory struct instance.
     Directory * directory_instance = returnDirPhysicalLocation(father_address);
@@ -73,9 +68,7 @@ Directory * find_dir(long int father_address, char *dir_name)
 
     return 0;
 
-};
-
-
+}
 InodeNumberNameDir * return_child_inodes(int inodeAddressFather, InodeNumberNameDir * sh_mem){
     // ! Fixed Size 
     long int * inodesNumbers = (long int *)malloc(sizeof(long int) * 64);
@@ -129,12 +122,8 @@ InodeNumberNameDir * return_child_inodes(int inodeAddressFather, InodeNumberName
 }
 
 
-/**
-* \authors Sandy Hoffmann and Leonardo de Souza Fiamoncini.
-* \since 24/04/2023.
-* \brief Function that shows all directories in memory, based on the folder name and the father's address
 
-**/
+// ferramentas
 void xls(){
     
     struct directory * directory_instance = returnDirPhysicalLocation(xpath);
@@ -152,14 +141,7 @@ void xls(){
 
     print_nexts( child_instance, child_address, 1);
 
-};
-
-/**
-* \authors Sandy Hoffmann and Leonardo de Souza Fiamoncini.
-* \since 01/05/2023.
-* \brief Print all directories in memory, based on the folder name and the father's address
-
-**/
+}
 void print_nexts( struct directory *child_instance, long int child_address, int level){
         
     for (int i = 0; i < level; i++)
@@ -193,31 +175,66 @@ void print_nexts( struct directory *child_instance, long int child_address, int 
         print_nexts(child_instance, child_address, level);
     }
 }
+void write_indirect(char *data, 
+                    long int block_address_allocate, 
+                    long int indirect_counter, 
+                    long int active_indirect, 
+                    int level){
 
-/**
- * \authors Sandy Hoffmann and Leonardo de Souza Fiamoncini.
- * \brief Function that allocates data in memory using the directs and indirects pointers of the inode.
- * \date 05/06/2023
- * 
- */
-
-void allocate_data(char * data,int tamanho, XFILE arquivo){
-    // ! First desconsidering the directs pointers
-    // ! Indirect 1� is working, 2� is working, 3� in progress
-
-    //long int *indirectArray = malloc(4 * sizeof(long int));
+    if (level == 1){
+        
+        write_block(data, block_address_allocate);
     
-    // * Information about the pointers
-    // * each indirect pointer to a block of data (block_size or 4096 bytes)
+    }
+
+    long int physical_offset = physicalAddress(xReadBlock.block_size, active_indirect)+
+                                (indirect_counter*sizeof(long int));
+    off_t offset = lseek(xDisc,physical_offset, SEEK_SET);
+    if (offset == -1) {
+        printf("Error using lseek\n");
+    }
+
+    long int *block_address_copy = (long int *)malloc(sizeof(long int));
+    block_address_copy = &block_address_allocate;
+    write(xDisc, block_address_copy, sizeof(long int));
+
+    long int *block_address_read = (long int *)malloc(sizeof(long int));
+    lseek(xDisc, physical_offset, SEEK_SET);
+    read(xDisc, block_address_read, sizeof(long int));
+
+}
+
+
+
+
+
+
+// escrever dados em um bloco
+void write_block(char *data, long int block_address){
+    lseek(xDisc, physicalAddress(xReadBlock.block_size, block_address), SEEK_SET);
+    write(xDisc, &data[0], xReadBlock.block_size);
+}
+//ler bloco
+char * read_block(long int block_address, long int i){
+    long int numero = (long int)malloc(sizeof(long int));
+    long int physical_offset_num = physicalAddress(xReadBlock.block_size,block_address)+i*sizeof(long int);
+    lseek(xDisc, physical_offset_num , SEEK_SET);
+    read(xDisc, &numero, sizeof(long int));
+
+    char *buffer_data = (char *)malloc(xReadBlock.block_size);
+    long int physical_offset = physicalAddress(xReadBlock.block_size, numero);
+    lseek(xDisc, physical_offset, SEEK_SET);
+    read(xDisc, buffer_data, xReadBlock.block_size);
+    return buffer_data;
+}
+void allocate_data(char * data,int tamanho, XFILE arquivo){
+
+    // limitar o tamanho dos indirects
     long int total_data_indirects_1 = xReadBlock.block_size / sizeof(long int);
     long int total_data_indirects_2 = pow(xReadBlock.block_size / sizeof(long int),2);
     long int total_data_indirects_3 = pow(xReadBlock.block_size / sizeof(long int),3);
 
-    // * Alocando todos os blocos necess�rios de acordo com os indirects necess�rios
-
-    // ? Considering a dump file data
-    //int text_file = open(data, O_RDONLY);
-
+    //buffer de escrita de dados
     char *buffer_data = (char *)malloc(xReadBlock.block_size);
 
     // * Parameter to see if there is a need to change the indirect pointer
@@ -322,127 +339,6 @@ void allocate_data(char * data,int tamanho, XFILE arquivo){
 
     // * Last of the array is the size of the file in blocks
     arquivo->file_size = total_blocks_read;
-}
-
-/**
- * \authors Sandy Hoffmann and Leonardo de Souza Fiamoncini.
- * \brief Function that allocates data in first indirect inode.
- * \date 18/06/2023
- */
-void write_indirect(char *data, 
-                    long int block_address_allocate, 
-                    long int indirect_counter, 
-                    long int active_indirect, 
-                    int level){
-
-    if (level == 1){
-        
-        write_block(data, block_address_allocate);
-    
-    }
-
-    long int physical_offset = physicalAddress(xReadBlock.block_size, active_indirect)+
-                                (indirect_counter*sizeof(long int));
-    off_t offset = lseek(xDisc,physical_offset, SEEK_SET);
-    if (offset == -1) {
-        printf("Error using lseek\n");
-    }
-
-    long int *block_address_copy = (long int *)malloc(sizeof(long int));
-    block_address_copy = &block_address_allocate;
-    write(xDisc, block_address_copy, sizeof(long int));
-
-    long int *block_address_read = (long int *)malloc(sizeof(long int));
-    lseek(xDisc, physical_offset, SEEK_SET);
-    read(xDisc, block_address_read, sizeof(long int));
-
-}
-
-// escrever dados em um bloco
-void write_block(char *data, long int block_address){
-        lseek(xDisc, physicalAddress(xReadBlock.block_size, block_address), SEEK_SET);
-        write(xDisc, &data[0], xReadBlock.block_size);
-}
-
-// ler dados de um inode
-void xread(struct Inode *inode, char * dadosLidos, int tamanhoLeitura){
-        
-    // * Information about the pointers
-    // * each indirect pointer to a block of data (block_size or 4096 bytes)
-    long int total_data_indirects_1 = xReadBlock.block_size / sizeof(long int);
-    long int total_data_indirects_2 = pow(xReadBlock.block_size / sizeof(long int),2);
-    long int total_data_indirects_3 = pow(xReadBlock.block_size / sizeof(long int),3);
-
-    long int total_size_block = 512;
-    long int total_blocks_read = 0;
-    
-    long int total_leitura = 0;
-
-    long int active_indirect = 0;
-
-    long int * all_indirects = malloc(sizeof(long int)*3);
-    memset(all_indirects, 0, sizeof(long int)*3);
-
-    while (total_blocks_read < total_size_block){
-        if (all_indirects[0] == 0){
-            all_indirects[0] = inode->indirect1;
-            for (int i = 0; i < total_data_indirects_1; i++){
-                char * leitura = (char)malloc(xReadBlock.block_size);
-                leitura = read_block(all_indirects[0], i);
-                for(int cada = 0 ; cada < xReadBlock.block_size; cada++ ){
-                    dadosLidos[total_leitura] = leitura[cada];
-                    total_leitura++;
-                }
-                total_blocks_read++;
-                if (total_blocks_read == total_size_block){
-                    break;
-                }
-            }
-        } else if (total_blocks_read == total_data_indirects_1){
-            all_indirects[0] = inode->indirect2;
-            for (int i = 0; i < total_data_indirects_2; i++){
-                long int physical_offset = physicalAddress(xReadBlock.block_size,all_indirects[0])+i*sizeof(long int);
-                lseek(xDisc, physical_offset , SEEK_SET);
-                read(xDisc, &all_indirects[1], sizeof(long int));
-                for (int j = 0; j < total_data_indirects_1; j++){
-                    char * leitura = (char)malloc(xReadBlock.block_size);
-                    leitura = read_block(all_indirects[1], j);
-                    for(int cada = 0 ; cada < xReadBlock.block_size; cada++ ){
-                        dadosLidos[total_leitura] = leitura[cada];
-                        total_leitura++;
-                    }
-                    total_blocks_read++;
-                    if (total_blocks_read == total_size_block){
-                        break;
-                    }
-                }
-                if (total_blocks_read == total_size_block){
-                    break;
-                }
-            }
-            break;
-        } else if (total_size_block == total_data_indirects_2){
-            all_indirects[2] = inode->indirect3;
-        } else {
-            printf("Error: File too big");
-            break;
-        }
-    }
-
-}
-
-//ler bloco
-char * read_block(long int block_address, long int i){
-    long int numero = (long int)malloc(sizeof(long int));
-    long int physical_offset_num = physicalAddress(xReadBlock.block_size,block_address)+i*sizeof(long int);
-    lseek(xDisc, physical_offset_num , SEEK_SET);
-    read(xDisc, &numero, sizeof(long int));
-
-    char *buffer_data = (char *)malloc(xReadBlock.block_size);
-    long int physical_offset = physicalAddress(xReadBlock.block_size, numero);
-    lseek(xDisc, physical_offset, SEEK_SET);
-    read(xDisc, buffer_data, xReadBlock.block_size);
-    return buffer_data;
 }
 
 // criar diretorio

@@ -126,3 +126,88 @@ XFILE * xopen(char * nomeArquivo,char * tipo){
 void xwrite( XFILE arquivo, char * buffer, int tamanhoEscrita){
     allocate_data( buffer, tamanhoEscrita, arquivo);
 }
+
+// ler dados de um inode
+void xread(struct Inode * inode, char * dadosLidos, int tamanhoLeitura){
+        
+    // * Information about the pointers
+    // * each indirect pointer to a block of data (block_size or 4096 bytes)
+    long int total_data_indirects_1 = xReadBlock.block_size / sizeof(long int);
+    long int total_data_indirects_2 = pow(xReadBlock.block_size / sizeof(long int),2);
+    long int total_data_indirects_3 = pow(xReadBlock.block_size / sizeof(long int),3);
+
+    long int total_size_block = 512;
+    long int total_blocks_read = 0;
+    
+    long int total_leitura = 0;
+
+    long int active_indirect = 0;
+
+    long int * all_indirects = malloc(sizeof(long int)*3);
+    memset(all_indirects, 0, sizeof(long int)*3);
+
+    while (total_blocks_read < total_size_block){
+        if (all_indirects[0] == 0){
+            all_indirects[0] = inode->indirect1;
+            for (int i = 0; i < total_data_indirects_1; i++){
+                char * leitura = (char)malloc(xReadBlock.block_size);
+                leitura = read_block(all_indirects[0], i);
+                for(int cada = 0 ; cada < xReadBlock.block_size; cada++ ){
+                    dadosLidos[total_leitura] = leitura[cada];
+                    total_leitura++;
+                }
+                total_blocks_read++;
+                if (total_blocks_read == total_size_block){
+                    break;
+                }
+            }
+        } else if (total_blocks_read == total_data_indirects_1){
+            all_indirects[0] = inode->indirect2;
+            for (int i = 0; i < total_data_indirects_2; i++){
+                long int physical_offset = physicalAddress(xReadBlock.block_size,all_indirects[0])+i*sizeof(long int);
+                lseek(xDisc, physical_offset , SEEK_SET);
+                read(xDisc, &all_indirects[1], sizeof(long int));
+                for (int j = 0; j < total_data_indirects_1; j++){
+                    char * leitura = (char)malloc(xReadBlock.block_size);
+                    leitura = read_block(all_indirects[1], j);
+                    for(int cada = 0 ; cada < xReadBlock.block_size; cada++ ){
+                        dadosLidos[total_leitura] = leitura[cada];
+                        total_leitura++;
+                    }
+                    total_blocks_read++;
+                    if (total_blocks_read == total_size_block){
+                        break;
+                    }
+                }
+                if (total_blocks_read == total_size_block){
+                    break;
+                }
+            }
+            break;
+        } else if (total_size_block == total_data_indirects_2){
+            all_indirects[2] = inode->indirect3;
+        } else {
+            printf("Error: File too big");
+            break;
+        }
+    }
+
+}
+
+//mudar diretorio
+void xchdir(char * dir_name){
+
+    //diretorio
+    long int dir = find_dir(xpath,dir_name);
+    if( !dir ){
+        printf("diretorio nao existe...");
+        return 0;
+    }
+    Directory * diretorio = returnDirPhysicalLocation(dir);
+    struct Inode * no = readInode(diretorio->inode);
+
+    printf("Inicio dir %d\n",no->indirect1);
+
+
+}
+
