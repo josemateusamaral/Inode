@@ -15,7 +15,7 @@ Directory * find_dir(long int father_address, char *dir_name);
 void xls();
 void print_nexts(struct directory *child_instance, long int child_address, int level);
 void CreateEntry( char * dir_name, int type );
-void allocate_data(char * data,int tamanho,XFILE arquivo);
+void allocate_data(char * data,int tamanho,struct Inode * arquivo, long int posicaoEscrita);
 void write_block(char *data, long int block_address);
 char * read_block(long int block_address, long int i);
 InodeNumberNameDir * return_child_inodes(int inodeAddressFather, InodeNumberNameDir * sh_mem);

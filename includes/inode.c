@@ -10,7 +10,7 @@ struct Inode *create_inode(char *content, int file_type, long int *indirects)
     inode->modify_time = time(NULL);
     if (indirects != NULL)
     {
-        printf("Indirects 1 create inode: %ld\n", indirects[0]);
+        //printf("Indirects 1 create inode: %ld\n", indirects[0]);
         inode->indirect1 = indirects[0];
         inode->indirect2 = indirects[1];
         inode->indirect3 = indirects[2];
@@ -24,7 +24,7 @@ struct Inode *create_inode(char *content, int file_type, long int *indirects)
         inode->file_size = 0;
     }
 
-    printf("Inode size: %ld\n", sizeof(struct Inode));
+    //printf("Inode size: %ld\n", sizeof(struct Inode));
 
     if (strlen(content) == 0)
     {
@@ -35,16 +35,12 @@ struct Inode *create_inode(char *content, int file_type, long int *indirects)
 }
 
 //alocar inode no disco
-long int allocate_inode(int xDisc, struct SuperBlock ReadBlock, long int * indirects, int type)
-{
-    printf("Allocate inode\n");
-    printf("Indirect 1: %ld\n", indirects[0]);
+long int allocate_inode(int xDisc, struct SuperBlock ReadBlock, long int * indirects, int type){
 
     long int free_inode = return_free_inode_bit(xDisc, ReadBlock);
     struct Inode *inode_instance = (struct Inode *)malloc(ReadBlock.inode_size);
     inode_instance = create_inode("",type, indirects);
     long int physical_inode_address = ReadBlock.inode_start + free_inode * ReadBlock.inode_size;
-    printf("Physical inode address: %ld\n", physical_inode_address);
     lseek(xDisc, physical_inode_address, SEEK_SET);
     write(xDisc, inode_instance, ReadBlock.inode_size);
     

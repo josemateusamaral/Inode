@@ -1,5 +1,13 @@
 #include "xsyscalls.h"
 
+//printar o file descriptor
+void printXFILE(XFILE * arquivo){
+    printInode_OBJ(arquivo->inode);
+    printf("posicaoRelativa:%d\nposicaoFisica:%d\n",arquivo->posicaoRelativa,arquivo->posicaoFisica);
+    printf("tamanhoArquivo:%d\n",arquivo->tamanhoArquivo);
+}
+
+
 // formatar disco rapidamente sem limpar os blocos
 void xformatFast()
 {
@@ -61,7 +69,7 @@ void xformat()
         return_free_data_bit(xDisc, block);
     }
 
-    printf("\n\nOccupied blocks: %d\n", occupied_blocks);
+    //printf("\n\nOccupied blocks: %d\n", occupied_blocks);
 
     xReadBlock = block;
 }
@@ -106,7 +114,7 @@ void xmkdir(char * nomePasta){
 }
 
 // criar arquivo
-XFILE * xopen(char * nomeArquivo,char * tipo){
+XFILE xopen(char * nomeArquivo,char * tipo){
 
     Directory * directory_instance = find_dir(xpath,nomeArquivo);
     
@@ -117,82 +125,142 @@ XFILE * xopen(char * nomeArquivo,char * tipo){
 
     // retornar descritor do arquivo
     Directory * entrada = find_dir(xpath,nomeArquivo);
-    XFILE arquivo = readInode(entrada->inode);
+    struct Inode * inode = readInode(entrada->inode);
+    XFILE arquivo;
+    arquivo.inode = inode;
+    arquivo.posicaoRelativa = 0;
+    arquivo.posicaoFisica = 0;
+    arquivo.tamanhoArquivo = 0;
 
     return arquivo;
 }
 
-// escrever arquivo
-void xwrite( XFILE arquivo, char * buffer, int tamanhoEscrita){
-    allocate_data( buffer, tamanhoEscrita, arquivo);
+// escrever no arquivo
+void xwrite( XFILE * arquivo, char * buffer, int tamanhoEscrita){
+    struct Inode * inode = arquivo->inode;
+
+    // configurar novo tamanha do arquivo
+    if( arquivo->posicaoRelativa + tamanhoEscrita > arquivo->tamanhoArquivo ){
+        arquivo->tamanhoArquivo = arquivo->posicaoRelativa + tamanhoEscrita;
+    }
+
+    // configurar acesso aos indirects
+    long int total_data_indirects_1 = xReadBlock.block_size / sizeof(long int);
+    long int total_data_indirects_2 = pow(xReadBlock.block_size / sizeof(long int),2);
+    long int active_indirect = 0;
+    long int * all_indirects = malloc(sizeof(long int)*3);
+    memset(all_indirects, 0, sizeof(long int)*3);
+
+    // configurar variaveis para a escrita
+    long int total_size_block = 512;
+    long int total_blocks_read = 0;
+    long int total_escrita = 0;
+    long int inicioBlocoEscrita = arquivo->tamanhoArquivo / xReadBlock.block_size;
+    long int inicioEscrita = (arquivo->posicaoRelativa % xReadBlock.block_size);
+
+    //escrever nos blocos do indirect 1 caso tenha algo para escrever
+    if(inicioBlocoEscrita <= total_data_indirects_1){
+        for (int i = 0; i < (arquivo->tamanhoArquivo / xReadBlock.block_size) + 1; i++){
+            if( total_blocks_read >= inicioBlocoEscrita ){
+                unsigned char * leitura = (unsigned char)malloc(xReadBlock.block_size);
+                leitura = read_block(inode->indirect1, i);
+                //printf("\n\nBLOCO XWRITE:\n");
+                for(int cada = inicioEscrita ; cada < xReadBlock.block_size; cada++ ){
+                    //printf("%02X ",buffer[cada]);
+                    if( cada <= inicioEscrita + tamanhoEscrita){
+                        leitura[cada] = buffer[total_escrita];
+                        total_escrita++;
+                    }
+                }
+                // printf("\n");
+                long int physical_offset_num = physicalAddress(xReadBlock.block_size,inode->indirect1)+(i*sizeof(long int));
+                long int bloco;
+                lseek(xDisc, physical_offset_num , SEEK_SET);
+                read(xDisc, &bloco, sizeof(long int));
+                write_block(leitura,bloco);
+                inicioEscrita = 0;
+            }
+            total_blocks_read++;
+            if (total_blocks_read == total_size_block || total_escrita + arquivo->posicaoRelativa > arquivo->tamanhoArquivo){
+                break;
+            }
+        }
+    }else{
+        printf("\nEscrita muito grande");
+    }
 }
 
 // ler dados de um inode
-void xread(struct Inode * inode, char * dadosLidos, int tamanhoLeitura){
+void xread(XFILE * arquivo, char * dadosLidos, int tamanhoLeitura){
         
+    struct Inode * inode = arquivo->inode;
+
     // * Information about the pointers
     // * each indirect pointer to a block of data (block_size or 4096 bytes)
     long int total_data_indirects_1 = xReadBlock.block_size / sizeof(long int);
     long int total_data_indirects_2 = pow(xReadBlock.block_size / sizeof(long int),2);
-    long int total_data_indirects_3 = pow(xReadBlock.block_size / sizeof(long int),3);
-
     long int total_size_block = 512;
     long int total_blocks_read = 0;
-    
     long int total_leitura = 0;
-
     long int active_indirect = 0;
+    long int posicaoLeitura = 0;
+
+    long int inicioBlocoLeitura = arquivo->tamanhoArquivo / xReadBlock.block_size;
+    long int inicioLeitura = arquivo->posicaoRelativa % xReadBlock.block_size;
 
     long int * all_indirects = malloc(sizeof(long int)*3);
     memset(all_indirects, 0, sizeof(long int)*3);
 
-    while (total_blocks_read < total_size_block){
-        if (all_indirects[0] == 0){
-            all_indirects[0] = inode->indirect1;
-            for (int i = 0; i < total_data_indirects_1; i++){
-                char * leitura = (char)malloc(xReadBlock.block_size);
-                leitura = read_block(all_indirects[0], i);
-                for(int cada = 0 ; cada < xReadBlock.block_size; cada++ ){
+    for (int i = 0; i < (arquivo->tamanhoArquivo / total_data_indirects_1); i++){
+        if( total_blocks_read >= inicioBlocoLeitura ){
+            unsigned char * leitura = (unsigned char *)malloc(xReadBlock.block_size);
+            leitura = read_block(inode->indirect1, i);
+            for(int cada = 0 ; cada < xReadBlock.block_size; cada++ ){
+                posicaoLeitura++;
+                if(posicaoLeitura>inicioLeitura && posicaoLeitura<inicioLeitura+tamanhoLeitura+1){
                     dadosLidos[total_leitura] = leitura[cada];
                     total_leitura++;
                 }
-                total_blocks_read++;
-                if (total_blocks_read == total_size_block){
-                    break;
-                }
             }
-        } else if (total_blocks_read == total_data_indirects_1){
-            all_indirects[0] = inode->indirect2;
-            for (int i = 0; i < total_data_indirects_2; i++){
-                long int physical_offset = physicalAddress(xReadBlock.block_size,all_indirects[0])+i*sizeof(long int);
-                lseek(xDisc, physical_offset , SEEK_SET);
-                read(xDisc, &all_indirects[1], sizeof(long int));
-                for (int j = 0; j < total_data_indirects_1; j++){
-                    char * leitura = (char)malloc(xReadBlock.block_size);
-                    leitura = read_block(all_indirects[1], j);
-                    for(int cada = 0 ; cada < xReadBlock.block_size; cada++ ){
-                        dadosLidos[total_leitura] = leitura[cada];
-                        total_leitura++;
-                    }
-                    total_blocks_read++;
-                    if (total_blocks_read == total_size_block){
-                        break;
-                    }
-                }
-                if (total_blocks_read == total_size_block){
-                    break;
-                }
-            }
-            break;
-        } else if (total_size_block == total_data_indirects_2){
-            all_indirects[2] = inode->indirect3;
-        } else {
-            printf("Error: File too big");
+        }
+        total_blocks_read++;
+        if (total_blocks_read == total_size_block){
             break;
         }
     }
 
 }
+
+
+//configurar posicao para leitura e escrita em um arquivo
+void xseek(XFILE * file, long int offset, int posicionador){
+    
+    //salvar a posicao atual para o caso dos parametros estourarem
+    //OBS: neste contexto, estourar é quando o file.posicaoNoArquivo for menor que 0 ou maior que o tamanho do arquivo
+    int posicaoAtualBackup = file->posicaoRelativa;
+    
+    //definir o posicionador usando o SEEK_SET e o SEEK_END igual as chamadas originais
+    switch(posicionador){
+        case SEEK_SET:
+            file->posicaoRelativa = 0;
+            break;
+        case SEEK_END:
+            file->posicaoRelativa = file->tamanhoArquivo;
+            break;
+    }
+
+    //aplicar o offset
+    file->posicaoRelativa += offset;
+
+    //verificar se estourou
+    if( file->posicaoRelativa < 0 || file->posicaoRelativa > file->tamanhoArquivo){
+        file->posicaoRelativa = posicaoAtualBackup;
+        printf("\n!! ATENÇÂO: fseek inválido. Você saiu de onde o arquivo esta !!\n");
+    }
+
+}
+
+
 
 //mudar diretorio
 void xchdir(char * dir_name){

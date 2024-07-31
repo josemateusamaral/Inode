@@ -38,7 +38,7 @@ void main()
     
     // criar arquivo
     XFILE arquivo = xopen("samurai.png","wb");
-    printf("\nARQUIVO:\n");
+
     
     // ler arquivo e escrever no disco
     char * escrita = (char *)malloc(745);
@@ -46,24 +46,30 @@ void main()
     fseek(arquivoEntrada,0,SEEK_SET);
     fread(&escrita[0],1,745,arquivoEntrada);
     
-    xwrite(arquivo, escrita, 745);
+    // chamada de sistema para escrever arquivo
+    xseek(&arquivo,0,SEEK_SET);
+    xwrite(&arquivo, &escrita[0], 745);
 
     // ler dados de um arquivo
-    char * leitura = (char *)malloc(745);
-    xread(arquivo, leitura, 745);
+    long int tamanhoLeitura = 745;
+    unsigned char * leitura = (unsigned char *)malloc(tamanhoLeitura);
+    xseek(&arquivo,0,SEEK_SET);
+    xread(&arquivo, &leitura[0], tamanhoLeitura);
     printf("\nLEITURA:");
-    for( int i = 0 ; i < 745 ; i++ ){
-        printf("%c",leitura[i]);
+    for( int i = 0 ; i < tamanhoLeitura ; i++ ){
+    //    printf("%02X ",leitura[i]);
     }
+    printf("\n");
 
     // escrever arquivo fora
     FILE * arquivoSaida = fopen("temps/saida.png","wb");
+    lseek(arquivoSaida,0,SEEK_SET);
     fwrite(leitura, sizeof(unsigned char), 745, arquivoSaida);
-
-    xchdir("teste");
+    
 
     xls();
-
     xdismount();
+    
+    //xchdir("teste");
     
 }

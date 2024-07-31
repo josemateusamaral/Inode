@@ -127,12 +127,7 @@ InodeNumberNameDir * return_child_inodes(int inodeAddressFather, InodeNumberName
 void xls(){
     
     struct directory * directory_instance = returnDirPhysicalLocation(xpath);
-    //Inode * inode = readInode(directory_instance->inode);
     printf("\n DIR: %s ---- \n",directory_instance->name);
-    //long int father_address = xReadBlock.inode_directory_start;
-    //struct directory *directory_instance = (struct directory *)malloc(xReadBlock.block_size);
-    //lseek(xDisc, father_address, SEEK_SET);
-    //read(xDisc, directory_instance, xReadBlock.block_size);
 
     long int child_address = directory_instance->first_int;
     struct directory *child_instance = (struct directory *)malloc(xReadBlock.block_size);
@@ -212,143 +207,28 @@ void write_indirect(char *data,
 // escrever dados em um bloco
 void write_block(char *data, long int block_address){
     lseek(xDisc, physicalAddress(xReadBlock.block_size, block_address), SEEK_SET);
-    write(xDisc, &data[0], xReadBlock.block_size);
+    write(xDisc, data, xReadBlock.block_size);
 }
 //ler bloco
 char * read_block(long int block_address, long int i){
-    long int numero = (long int)malloc(sizeof(long int));
-    long int physical_offset_num = physicalAddress(xReadBlock.block_size,block_address)+i*sizeof(long int);
+
+    long int numero;
+    long int physical_offset_num = physicalAddress(xReadBlock.block_size,block_address)+(i*sizeof(long int));
     lseek(xDisc, physical_offset_num , SEEK_SET);
     read(xDisc, &numero, sizeof(long int));
 
     char *buffer_data = (char *)malloc(xReadBlock.block_size);
     long int physical_offset = physicalAddress(xReadBlock.block_size, numero);
+
     lseek(xDisc, physical_offset, SEEK_SET);
     read(xDisc, buffer_data, xReadBlock.block_size);
+
     return buffer_data;
 }
-void allocate_data(char * data,int tamanho, XFILE arquivo){
 
-    // limitar o tamanho dos indirects
-    long int total_data_indirects_1 = xReadBlock.block_size / sizeof(long int);
-    long int total_data_indirects_2 = pow(xReadBlock.block_size / sizeof(long int),2);
-    long int total_data_indirects_3 = pow(xReadBlock.block_size / sizeof(long int),3);
-
-    //buffer de escrita de dados
-    char *buffer_data = (char *)malloc(xReadBlock.block_size);
-
-    // * Parameter to see if there is a need to change the indirect pointer
-    long int total_blocks_read = 0;
-
-    // ? Indirect pointers counter
-    long int * all_indirect_counter = malloc(3 * sizeof(long int));
-    memset(all_indirect_counter, 0, 3 * sizeof(long int));
-    // * First indirect long int pointer
-
-    // ? Indirect pointers
-    long int * all_active_indirect = malloc(3 * sizeof(long int));
-    memset(all_active_indirect, 0, 3 * sizeof(long int));
-
-    int posicaoLeitura = 0;
-    memcpy(buffer_data, data + posicaoLeitura, xReadBlock.block_size);
-    int reading_data = 0;
-    if( tamanho < xReadBlock.block_size ){
-        reading_data = tamanho;
-    }
-    posicaoLeitura += reading_data;
-
-    while (reading_data > 0)
-    {
-        // * First Indirect
-        long int block_address_allocate = return_free_data_bit(xDisc, xReadBlock);
-        // * ifs control the indirect pointer
-        if (total_blocks_read == 0){
-            all_active_indirect[0] = block_address_allocate;
-            arquivo->indirect1 = block_address_allocate;
-            block_address_allocate = return_free_data_bit(xDisc, xReadBlock);
-        } else if(total_blocks_read == total_data_indirects_1){
-            all_active_indirect[0] = block_address_allocate;
-            arquivo->indirect2 = block_address_allocate;
-            block_address_allocate = return_free_data_bit(xDisc, xReadBlock);
-            all_indirect_counter[0] = 0;
-        } else if (total_blocks_read == total_data_indirects_2){
-            all_active_indirect[0] = block_address_allocate;
-            arquivo->indirect3 = block_address_allocate;
-            block_address_allocate = return_free_data_bit(xDisc, xReadBlock);
-            all_indirect_counter[0] = 0;
-        } else if (total_blocks_read == total_data_indirects_3){
-            printf("Error: File too big");
-            break;
-        } 
-
-        if (total_blocks_read < total_data_indirects_1){
-            write_indirect(buffer_data, block_address_allocate, all_indirect_counter[0], all_active_indirect[0],1);
-            all_indirect_counter[0]++;
-        } 
-        else if (total_blocks_read < total_data_indirects_2){
-            if (total_blocks_read % total_data_indirects_1 == 0){
-                all_active_indirect[1] = block_address_allocate;
-                write_indirect(buffer_data, block_address_allocate, all_indirect_counter[0], all_active_indirect[0],2);
-                block_address_allocate = return_free_data_bit(xDisc, xReadBlock);
-                all_indirect_counter[0]++;
-                all_indirect_counter[1] = 0;
-            }
-            printf("new_block_address_allocate: %ld\n", block_address_allocate);
-            write_indirect(buffer_data, block_address_allocate, all_indirect_counter[1], all_active_indirect[1],1);
-            all_indirect_counter[1]++;
-        } 
-        else if (total_blocks_read < total_data_indirects_3){
-            if (total_blocks_read % total_data_indirects_2 == 0){
-                all_active_indirect[2] = block_address_allocate;
-                write_indirect(buffer_data, block_address_allocate, all_indirect_counter[0], all_active_indirect[0],2);
-                block_address_allocate = return_free_data_bit(xDisc, xReadBlock);
-                all_indirect_counter[0]++;
-                all_indirect_counter[1] = 0;
-                all_indirect_counter[2] = 0;
-            }
-            if (total_blocks_read % total_data_indirects_1 == 0){
-                all_active_indirect[1] = block_address_allocate;
-                write_indirect(buffer_data, block_address_allocate, all_indirect_counter[1], all_active_indirect[1],2);
-                block_address_allocate = return_free_data_bit(xDisc, xReadBlock);
-                all_indirect_counter[1]++;
-                all_indirect_counter[2] = 0;
-            }
-            write_indirect(buffer_data, block_address_allocate, all_indirect_counter[2], all_active_indirect[2],1);
-            all_indirect_counter[2]++;
-        
-        }
-        
-        memset(buffer_data, 0, xReadBlock.block_size);
-
-        total_blocks_read++;
-        if(posicaoLeitura >= tamanho){
-            break;
-        }else{
-            if( posicaoLeitura + xReadBlock.block_size > tamanho ){
-                memcpy(buffer_data, data + posicaoLeitura, tamanho - posicaoLeitura);
-                reading_data = tamanho - posicaoLeitura;
-                
-            }else{
-                memcpy(buffer_data, data + posicaoLeitura, xReadBlock.block_size);
-                reading_data = xReadBlock.block_size;
-            }
-            posicaoLeitura += reading_data;
-        }
-        
-    }
-
-    // * Last of the array is the size of the file in blocks
-    arquivo->file_size = total_blocks_read;
-}
 
 // criar diretorio
 void CreateEntry( char * dir_name, int type ){
-    
-    // * STEP 1 - Split the path into the directory name and the path itself.
-    // * STEP 2 - Keep the reference to the father directory.
-    // * STEP 3 - If father does not have first, then allocate the directory in the first.
-    // *          Else, iterate into next's
-    // * First it is necessary to split the path into the directory name and the path itself.
 
     char *dir_path = (char *)malloc(sizeof(char) * strlen(dir_name) + 1);
     strcpy(dir_path, dir_name);
