@@ -69,7 +69,5 @@ void main()
 
     xls();
     xdismount();
-    
-    //xchdir("teste");
-    
+        
 }
